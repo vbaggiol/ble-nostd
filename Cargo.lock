@@ -42,6 +42,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 
 [[package]]
+name = "ble-nostd"
+version = "0.1.0"
+dependencies = [
+ "bleps",
+ "cfg-if",
+ "critical-section",
+ "esp-alloc",
+ "esp-backtrace",
+ "esp-hal",
+ "esp-println",
+ "esp-wifi",
+ "log",
+]
+
+[[package]]
 name = "bleps"
 version = "0.1.0"
 source = "git+https://github.com/bjoernQ/bleps?rev=a5148d8ae679e021b78f53fd33afb8bb35d0b62e#a5148d8ae679e021b78f53fd33afb8bb35d0b62e"
@@ -472,21 +487,6 @@ dependencies = [
  "basic-toml",
  "serde",
  "strum",
-]
-
-[[package]]
-name = "esp-nostd4"
-version = "0.1.0"
-dependencies = [
- "bleps",
- "cfg-if",
- "critical-section",
- "esp-alloc",
- "esp-backtrace",
- "esp-hal",
- "esp-println",
- "esp-wifi",
- "log",
 ]
 
 [[package]]

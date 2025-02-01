@@ -1,10 +1,10 @@
 [package]
 edition = "2021"
-name    = "esp-nostd4"
+name    = "ble-nostd"
 version = "0.1.0"
 
 [[bin]]
-name = "esp-nostd4"
+name = "ble-nostd"
 path = "./src/bin/main.rs"
 
 [dependencies]
