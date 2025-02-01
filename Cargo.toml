@@ -18,6 +18,10 @@ esp-backtrace = { version = "0.15.0", features = [
 esp-hal = { version = "0.23.1", features = ["esp32c3", "unstable"] }
 esp-println = { version = "0.13.0", features = ["esp32c3", "log"] }
 log = { version = "0.4.21" }
+bleps               = { git = "https://github.com/bjoernQ/bleps", package = "bleps", rev = "a5148d8ae679e021b78f53fd33afb8bb35d0b62e", features = [ "macros", "async"] }
+esp-alloc = { version="0.6.0"}
+esp-wifi = { version = "0.12.0", features = ["esp32c3", "ble"] }
+cfg-if                = "1.0.0"
 
 [profile.dev]
 # Rust debug is too slow.
