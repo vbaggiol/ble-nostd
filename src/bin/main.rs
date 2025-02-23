@@ -27,33 +27,35 @@ use esp_hal::{
     timer::timg::TimerGroup,
 };
 use esp_println::println;
-use esp_wifi::{ble::controller::BleConnector, init};
+use esp_wifi::{ble::controller::BleConnector, init, EspWifiController};
 
 #[main]
 fn main() -> ! {
     esp_alloc::heap_allocator!(72 * 1024);
     let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
-    let init_logger_from_env = esp_println::logger::init_logger_from_env();
+    let _init_logger_from_env = esp_println::logger::init_logger_from_env();
     
+    let now = || time::now().duration_since_epoch().to_millis();
+
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
+    let mut ble: Ble;
+    let wifi_ctrl: EspWifiController<'_>; 
+    let hci: HciConnector<BleConnector<'_>>;
+    {
+        let timg0 = TimerGroup::new(peripherals.TIMG0);
 
-    let timg0 = TimerGroup::new(peripherals.TIMG0);
-
-    let init = init(
-        timg0.timer0,
-        Rng::new(peripherals.RNG),
-        peripherals.RADIO_CLK,
-    )
-    .unwrap();
-    let mut bluetooth = peripherals.BT;
-
-
-    let now = || time::now().duration_since_epoch().to_millis();
-    
-    let connector = BleConnector::new(&init, &mut bluetooth);
-    let hci = HciConnector::new(connector, now);
-    let mut ble = Ble::new(&hci);
+        wifi_ctrl = init(
+            timg0.timer0,
+            Rng::new(peripherals.RNG),
+            peripherals.RADIO_CLK,
+        )
+        .unwrap();
+        
+        let connector = BleConnector::new(&wifi_ctrl, peripherals.BT);
+        hci = HciConnector::new(connector, now);
+        ble = Ble::new(&hci);
+    }
 
     println!("{:?}", ble.init());
     println!("{:?}", ble.cmd_set_le_advertising_parameters());
