@@ -31,11 +31,12 @@ use esp_wifi::{ble::controller::BleConnector, init};
 
 #[main]
 fn main() -> ! {
-    esp_println::logger::init_logger_from_env();
+    esp_alloc::heap_allocator!(72 * 1024);
+    let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
+    let init_logger_from_env = esp_println::logger::init_logger_from_env();
+    
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
-
-    esp_alloc::heap_allocator!(72 * 1024);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
 
@@ -45,38 +46,37 @@ fn main() -> ! {
         peripherals.RADIO_CLK,
     )
     .unwrap();
-
     let mut bluetooth = peripherals.BT;
-    let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
+
 
     let now = || time::now().duration_since_epoch().to_millis();
+    
+    let connector = BleConnector::new(&init, &mut bluetooth);
+    let hci = HciConnector::new(connector, now);
+    let mut ble = Ble::new(&hci);
+
+    println!("{:?}", ble.init());
+    println!("{:?}", ble.cmd_set_le_advertising_parameters());
+    println!(
+        "{:?}",
+        ble.cmd_set_le_advertising_data(
+            create_advertising_data(&[
+                AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
+                AdStructure::ServiceUuids16(&[Uuid::Uuid16(0xD2FC)]),
+                AdStructure::CompleteLocalName("BeaconX32"),
+                AdStructure::ServiceData16 { uuid: 0xD2FC, data: &adv_svc_data }
+            ])
+            .unwrap()
+        )
+    );
+    println!("{:?}", ble.cmd_set_le_advertise_enable(true));
+
+    println!("started advertising");
+
+    let delay = Delay::new();
+
     loop {
-        let connector = BleConnector::new(&init, &mut bluetooth);
-        let hci = HciConnector::new(connector, now);
-        let mut ble = Ble::new(&hci);
-
-        println!("{:?}", ble.init());
-        println!("{:?}", ble.cmd_set_le_advertising_parameters());
-        println!(
-            "{:?}",
-            ble.cmd_set_le_advertising_data(
-                create_advertising_data(&[
-                    AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-                    AdStructure::ServiceUuids16(&[Uuid::Uuid16(0xD2FC)]),
-                    AdStructure::CompleteLocalName("BeaconX32"),
-                    AdStructure::ServiceData16 { uuid: 0xD2FC, data: &adv_svc_data }
-                ])
-                .unwrap()
-            )
-        );
-        println!("{:?}", ble.cmd_set_le_advertise_enable(true));
-
-        println!("started advertising");
-
-        let delay = Delay::new();
-
-        loop {
-            delay.delay_millis(50);
-        }
+        delay.delay_millis(50);
     }
+
 }
