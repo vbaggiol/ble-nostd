@@ -9,10 +9,9 @@
 
 #![no_std]
 #![no_main]
-
 use bleps::{
     ad_structure::{
-        create_advertising_data, AdStructure, BR_EDR_NOT_SUPPORTED, LE_GENERAL_DISCOVERABLE,
+        create_advertising_data, AdStructure, BR_EDR_NOT_SUPPORTED, LE_GENERAL_DISCOVERABLE //, AD_FLAG_LE_LIMITED_DISCOVERABLE
     },
     att::Uuid,
     Ble, HciConnector,
@@ -48,6 +47,7 @@ fn main() -> ! {
     .unwrap();
 
     let mut bluetooth = peripherals.BT;
+    let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
 
     let now = || time::now().duration_since_epoch().to_millis();
     loop {
@@ -62,8 +62,9 @@ fn main() -> ! {
             ble.cmd_set_le_advertising_data(
                 create_advertising_data(&[
                     AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-                    AdStructure::ServiceUuids16(&[Uuid::Uuid16(0x1809)]),
+                    AdStructure::ServiceUuids16(&[Uuid::Uuid16(0xD2FC)]),
                     AdStructure::CompleteLocalName("BeaconX32"),
+                    AdStructure::ServiceData16 { uuid: 0xD2FC, data: &adv_svc_data }
                 ])
                 .unwrap()
             )
