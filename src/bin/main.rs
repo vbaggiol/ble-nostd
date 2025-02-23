@@ -29,23 +29,21 @@ use esp_hal::{
 use esp_println::println;
 use esp_wifi::{ble::controller::BleConnector, init, EspWifiController};
 
-#[main]
-fn main() -> ! {
-    esp_alloc::heap_allocator!(72 * 1024);
-    let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
-    let _init_logger_from_env = esp_println::logger::init_logger_from_env();
-    
-    let now = || time::now().duration_since_epoch().to_millis();
+struct BleCtrl {
+    ble: Ble<'static>,
+    hci: HciConnector<BleConnector<'static>>,
+    wifi_ctrl: EspWifiController<'static>, 
+}
 
-    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let peripherals = esp_hal::init(config);
-    let mut ble: Ble;
-    let wifi_ctrl: EspWifiController<'_>; 
-    let hci: HciConnector<BleConnector<'_>>;
-    {
+impl BleCtrl {
+    fn new() -> Self {
+    
+        let now = || time::now().duration_since_epoch().to_millis();
+        let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+        let peripherals = esp_hal::init(config);
         let timg0 = TimerGroup::new(peripherals.TIMG0);
 
-        wifi_ctrl = init(
+        let wifi_ctrl = init(
             timg0.timer0,
             Rng::new(peripherals.RNG),
             peripherals.RADIO_CLK,
@@ -53,25 +51,41 @@ fn main() -> ! {
         .unwrap();
         
         let connector = BleConnector::new(&wifi_ctrl, peripherals.BT);
-        hci = HciConnector::new(connector, now);
-        ble = Ble::new(&hci);
+        let hci = HciConnector::new(connector, now);
+        let ble = Ble::new(&hci);
+        BleCtrl{ble, hci, wifi_ctrl}  
     }
 
-    println!("{:?}", ble.init());
-    println!("{:?}", ble.cmd_set_le_advertising_parameters());
-    println!(
-        "{:?}",
-        ble.cmd_set_le_advertising_data(
-            create_advertising_data(&[
-                AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-                AdStructure::ServiceUuids16(&[Uuid::Uuid16(0xD2FC)]),
-                AdStructure::CompleteLocalName("BeaconX32"),
-                AdStructure::ServiceData16 { uuid: 0xD2FC, data: &adv_svc_data }
-            ])
-            .unwrap()
-        )
-    );
-    println!("{:?}", ble.cmd_set_le_advertise_enable(true));
+    fn send_advertising_data(&self, data: &[u8]) {
+        todo!("implement sending of {data:?}")
+    }
+
+}
+
+#[main]
+fn main() -> ! {
+    esp_alloc::heap_allocator!(72 * 1024);
+    let adv_svc_data:[u8;4] = [0x40, 0x2, 0xC4, 0x9];
+    let _init_logger_from_env = esp_println::logger::init_logger_from_env();
+    
+    let ble_ctl = BleCtrl::new();
+    ble_ctl.send_advertising_data(&adv_svc_data);
+
+    // println!("{:?}", ble.init());
+    // println!("{:?}", ble.cmd_set_le_advertising_parameters());
+    // println!(
+    //     "{:?}",
+    //     ble.cmd_set_le_advertising_data(
+    //         create_advertising_data(&[
+    //             AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
+    //             AdStructure::ServiceUuids16(&[Uuid::Uuid16(0xD2FC)]),
+    //             AdStructure::CompleteLocalName("Hello"),
+    //             AdStructure::ServiceData16 { uuid: 0xD2FC, data: &adv_svc_data }
+    //         ])
+    //         .unwrap()
+    //     )
+    // );
+    // println!("{:?}", ble.cmd_set_le_advertise_enable(true));
 
     println!("started advertising");
 
